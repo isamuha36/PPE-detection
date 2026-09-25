@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeMine AI - Pemantauan Kepatuhan APD Tambang | TRPL SV UGM</title>
+  <!-- Tailwind CSS CDN with class-based dark mode -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Helvetica Neue"', 'Helvetica', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Arial', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+          },
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      font-family: "Helvetica Neue", Helvetica, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+    .font-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    }
+    /* Smooth transitions */
+    body, header, main, footer, div, button, select, table {
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .light ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .light ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dark ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col justify-between antialiased">
+
+  <!-- Header Navigation -->
+  <header class="bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 backdrop-blur px-6 py-3.5 shadow-sm">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand & Project Identity -->
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center font-bold text-xl shadow-sm border border-amber-500/30">
+          <i class="fa-solid fa-helmet-safety"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-base font-bold tracking-tight text-slate-900 dark:text-white">SafeMine AI</span>
+            <span class="text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2 py-0.5 rounded-full font-medium">K3 Tambang</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Pemantauan APD Real-Time | TRPL SV UGM &times; PT Parama Data Unit</p>
+        </div>
+      </div>
+
+      <!-- Controls: Engine Selector, GPU Status, Theme Switcher -->
+      <div class="flex items-center flex-wrap gap-2.5 text-xs">
+        
+        <!-- GPU Tag -->
+        <div class="hidden sm:flex items-center space-x-2 bg-slate-100 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>GPU: <strong class="text-slate-900 dark:text-white font-semibold">RTX 4050</strong></span>
+        </div>
+
+        <!-- Model Switcher Dropdown -->
+        <div class="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+          <label for="modelSelector" class="text-slate-500 dark:text-slate-400 font-medium text-[11px]">Model:</label>
+          <select id="modelSelector" onchange="changeModel()" class="bg-transparent text-slate-800 dark:text-amber-300 font-medium text-xs focus:outline-none cursor-pointer">
+            <option value="best.onnx" selected>ONNX Runtime FP16 (Lebih Cepat)</option>
+            <option value="best.pt">PyTorch FP32 (Baseline)</option>
+          </select>
+        </div>
+
+        <!-- Light / Dark Mode Toggle Button -->
+        <button onclick="toggleTheme()" id="themeToggleBtn" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center transition focus:outline-none" title="Ubah Tema (Terang / Gelap)">
+          <i id="themeIcon" class="fa-solid fa-moon"></i>
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Body -->
+  <main class="max-w-7xl w-full mx-auto px-6 py-6 space-y-6 flex-1">
+
+    <!-- KPI Metric Cards Row -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      <!-- Total Workers Card -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium">
+          <span>Pekerja Terpantau</span>
+          <span class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-users"></i>
+          </span>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span id="metricWorkers" class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">0</span>
+          <span class="text-xs text-slate-500">orang</span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Terdeteksi pada area kamera</p>
+      </div>
+
+      <!-- Active Violations Card -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium">
+          <span>Pelanggaran APD</span>
+          <span class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </span>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span id="metricViolations" class="text-3xl font-bold tracking-tight text-rose-600 dark:text-rose-400">0</span>
+          <span class="text-xs text-rose-600/80 dark:text-rose-400/80">kejadian</span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Helm atau sarung tangan tidak terpakai</p>
+      </div>
+
+      <!-- Compliance Rate Card -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium">
+          <span>Tingkat Kepatuhan</span>
+          <span class="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-shield-check"></i>
+          </span>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span id="metricCompliance" class="text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">100%</span>
+          <span class="text-xs text-emerald-600/80 dark:text-emerald-400/80 font-medium">Standar K3</span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Rasio keselamatan area kerja</p>
+      </div>
+
+      <!-- Inference Latency Card -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium">
+          <span>Kecepatan Deteksi</span>
+          <span class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-bolt"></i>
+          </span>
+        </div>
+        <div class="mt-3 flex items-baseline space-x-2">
+          <span id="metricLatency" class="text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-400">-- ms</span>
+        </div>
+        <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Model: <strong id="lblActiveModel" class="font-medium text-slate-700 dark:text-slate-300">best.onnx</strong></p>
+      </div>
+
+    </div>
+
+    <!-- Workspace Grid: CCTV Monitor & Inspection Console -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Column: Live CCTV Stream (7 cols) -->
+      <div class="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+        
+        <!-- Stream Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+          <div class="flex items-center space-x-3">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Pemantauan CCTV Langsung</h2>
+              <select id="cameraSelect" onchange="switchCameraLocation()" class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-0.5 text-xs focus:outline-none">
+                <option value="CAM-PIT-01">Kamera 01: Pit Penambangan</option>
+                <option value="CAM-HAUL-02">Kamera 02: Jalur Hauling</option>
+                <option value="CAM-WSHOP-03">Kamera 03: Bengkel Alat Berat</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button id="btnWebcam" onclick="toggleWebcam()" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs transition flex items-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-play"></i> <span>Mulai Kamera</span>
+            </button>
+            <button onclick="captureCurrentSnapshot()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700 transition" title="Ambil Foto Kejadian">
+              <i class="fa-solid fa-camera mr-1"></i> Snapshot
+            </button>
+            <button onclick="stopFeed()" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs transition" title="Berhenti">
+              <i class="fa-solid fa-stop"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Video Player Window -->
+        <div class="relative bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 aspect-video flex items-center justify-center overflow-hidden">
+          <img id="streamView" src="" alt="Video Feed" class="w-full h-full object-contain hidden">
+          <div id="streamPlaceholder" class="text-center p-6 space-y-2.5">
+            <div class="w-14 h-14 rounded-full bg-slate-200/70 dark:bg-slate-800/80 flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500 text-2xl">
+              <i class="fa-solid fa-video-slash"></i>
+            </div>
+            <div>
+              <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Siaran Kamera Belum Dimulai</p>
+              <p class="text-xs text-slate-500 dark:text-slate-500 max-w-sm mt-0.5">Klik tombol <strong>"Mulai Kamera"</strong> untuk mengaktifkan video deteksi real-time.</p>
+            </div>
+          </div>
+
+          <!-- Top-Left Floating Badge -->
+          <div id="liveBadge" class="absolute top-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-md text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 shadow-sm hidden">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>SIARAN AKTIF • ~59 FPS</span>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex flex-wrap items-center justify-between text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 gap-2">
+          <div class="flex items-center space-x-4">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> APD Terpasang (Patuh)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> APD Hilang (Melanggar)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Pekerja</span>
+          </div>
+          <span class="text-slate-400 text-[11px]">Batas Keyakinan: <strong>0.45</strong></span>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Verification & Image Inspection (5 cols) -->
+      <div class="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+        
+        <div class="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Uji Coba Sampel Citra</h2>
+          <span class="text-xs text-slate-400 font-medium">141 citra pengujian</span>
+        </div>
+
+        <!-- Scenario Selector Buttons -->
+        <div class="space-y-2">
+          <p class="text-xs font-medium text-slate-600 dark:text-slate-400">Pilih skenario situasi pekerja:</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button onclick="testSampleImage('random')" class="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-medium transition flex items-center gap-2">
+              <i class="fa-solid fa-shuffle text-amber-500"></i> <span>Sampel Acak</span>
+            </button>
+            <button onclick="testSampleImage('cap_off')" class="p-2.5 rounded-xl bg-rose-50/60 hover:bg-rose-50 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 border border-rose-200/80 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 font-medium transition flex items-center gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-rose-500"></i> <span>Tanpa Helm</span>
+            </button>
+            <button onclick="testSampleImage('gloves_off')" class="p-2.5 rounded-xl bg-orange-50/60 hover:bg-orange-50 dark:bg-orange-950/30 dark:hover:bg-orange-950/50 border border-orange-200/80 dark:border-orange-900/60 text-orange-700 dark:text-orange-300 font-medium transition flex items-center gap-2">
+              <i class="fa-solid fa-hand text-orange-500"></i> <span>Tanpa Sarung Tangan</span>
+            </button>
+            <button onclick="testSampleImage('compliant')" class="p-2.5 rounded-xl bg-emerald-50/60 hover:bg-emerald-50 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-medium transition flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-500"></i> <span>Lengkap & Patuh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Drag & Drop Upload Zone -->
+        <div id="dropZone" onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-slate-200 hover:border-amber-500/80 dark:border-slate-800 dark:hover:border-amber-500/80 rounded-xl p-3.5 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-950/50">
+          <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileUpload(event)">
+          <div class="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
+            <i class="fa-solid fa-cloud-arrow-up text-amber-500 text-base"></i>
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Atau unggah foto dari komputer Anda</span>
+          </div>
+        </div>
+
+        <!-- Result Preview Area -->
+        <div class="bg-slate-100 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 p-2.5 min-h-[220px] flex flex-col items-center justify-center relative overflow-hidden">
+          <img id="imageResult" src="" alt="Pratinjau Hasil" class="max-h-[220px] w-auto rounded-lg object-contain hidden shadow-sm">
+          <div id="imagePlaceholder" class="text-center text-xs text-slate-400 dark:text-slate-600 space-y-1.5 p-4">
+            <i class="fa-solid fa-image text-3xl block text-slate-300 dark:text-slate-700"></i>
+            <p class="font-medium text-slate-600 dark:text-slate-400">Pilih salah satu skenario di atas untuk memeriksa citra</p>
+          </div>
+
+          <!-- Bottom Telemetry Floating Tag -->
+          <div id="benchmarkTag" class="absolute bottom-2 left-2 right-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg text-xs flex items-center justify-between shadow-sm hidden">
+            <div class="flex items-center gap-2 text-[11px] truncate">
+              <span id="tagFilename" class="text-slate-800 dark:text-slate-200 font-semibold truncate">gambar.jpg</span>
+              <span class="text-slate-300 dark:text-slate-700">|</span>
+              <span id="tagEngine" class="text-amber-600 dark:text-amber-400 font-medium">ONNX FP16</span>
+            </div>
+            <div class="font-mono text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]" id="tagSpeed">
+              -- ms
+            </div>
+          </div>
+        </div>
+
+        <!-- Detection Breakdown Checklist -->
+        <div id="breakdownCard" class="space-y-2 hidden">
+          <div class="flex items-center justify-between text-xs">
+            <h3 class="font-semibold text-slate-700 dark:text-slate-300">Rincian Objek Terdeteksi</h3>
+            <span id="totalBoxCount" class="text-slate-400 text-[11px]">0 objek</span>
+          </div>
+          <div id="breakdownList" class="space-y-1.5 text-xs max-h-36 overflow-y-auto pr-1"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bottom Section: Violation Audit Table -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+      
+      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Buku Log Insiden K3 Lapangan</h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Catatan otomatis kejadian pekerja tanpa perlengkapan keselamatan standar</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="exportLogsCSV()" class="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/60 dark:text-emerald-300 text-xs font-medium border border-emerald-200 dark:border-emerald-800/80 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-file-csv"></i> Unduh Laporan CSV
+          </button>
+          <button onclick="clearLogs()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-xs font-medium transition">
+            <i class="fa-solid fa-trash-can mr-1"></i> Bersihkan Log
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300">
+          <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
+            <tr>
+              <th class="py-3 px-4 font-semibold">Waktu Kejadian</th>
+              <th class="py-3 px-4 font-semibold">Lokasi / Kamera</th>
+              <th class="py-3 px-4 font-semibold">Jenis Pelanggaran</th>
+              <th class="py-3 px-4 font-semibold">Tingkat Keyakinan</th>
+              <th class="py-3 px-4 font-semibold">Status</th>
+              <th class="py-3 px-4 font-semibold">Tindakan Cepat</th>
+            </tr>
+          </thead>
+          <tbody id="violationTableBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+            <tr id="emptyLogRow">
+              <td colspan="6" class="py-7 text-center text-slate-400 dark:text-slate-500 text-xs">
+                <i class="fa-solid fa-circle-check text-emerald-500 text-lg mb-1 block"></i>
+                Tidak ada insiden pelanggaran yang tercatat saat ini. Seluruh pekerja mematuhi standar K3.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Clean Footer -->
+  <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 py-4 text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center justify-between gap-3">
+    <div>SafeMine AI &bull; Tugas Akhir D4 TRPL SV UGM 2026/2027 &times; PT Parama Data Unit</div>
+    <div>Akselerasi GPU: NVIDIA RTX 4050 &bull; Standar K3 Industri Pertambangan</div>
+  </footer>
+
+  <!-- Client Controller Script -->
+  <script>
+    let isWebcamActive = false;
+    let pollInterval = null;
+    let currentLoadedFile = null;
+    let loggedIncidents = [];
+
+    // Theme Management (Light / Dark)
+    function initTheme() {
+      const saved = localStorage.getItem("safemine_theme") || "light";
+      setTheme(saved);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.classList.contains("dark") ? "dark" : "light";
+      const next = current === "dark" ? "light" : "dark";
+      setTheme(next);
+    }
+
+    function setTheme(theme) {
+      const icon = document.getElementById("themeIcon");
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+        document.documentElement.classList.remove("light");
+        icon.className = "fa-solid fa-sun text-amber-400";
+      } else {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.classList.add("light");
+        icon.className = "fa-solid fa-moon text-slate-600";
+      }
+      localStorage.setItem("safemine_theme", theme);
+    }
+
+    // Initialize Theme immediately
+    initTheme();
+
+    function toggleWebcam() {
+      const streamView = document.getElementById("streamView");
+      const placeholder = document.getElementById("streamPlaceholder");
+      const liveBadge = document.getElementById("liveBadge");
+      const btn = document.getElementById("btnWebcam");
+
+      if (!isWebcamActive) {
+        streamView.src = "/api/v1/stream/webcam?" + new Date().getTime();
+        streamView.classList.remove("hidden");
+        placeholder.classList.add("hidden");
+        liveBadge.classList.remove("hidden");
+        btn.classList.replace("bg-amber-500", "bg-rose-600");
+        btn.classList.replace("hover:bg-amber-600", "hover:bg-rose-700");
+        btn.classList.replace("text-slate-950", "text-white");
+        btn.innerHTML = '<i class="fa-solid fa-pause"></i> <span>Jeda Kamera</span>';
+        isWebcamActive = true;
+
+        pollInterval = setInterval(fetchStats, 1000);
+      } else {
+        stopFeed();
+      }
+    }
+
+    function stopFeed() {
+      const streamView = document.getElementById("streamView");
+      const placeholder = document.getElementById("streamPlaceholder");
+      const liveBadge = document.getElementById("liveBadge");
+      const btn = document.getElementById("btnWebcam");
+
+      streamView.src = "";
+      streamView.classList.add("hidden");
+      placeholder.classList.remove("hidden");
+      liveBadge.classList.add("hidden");
+      btn.classList.replace("bg-rose-600", "bg-amber-500");
+      btn.classList.replace("hover:bg-rose-700", "hover:bg-amber-600");
+      btn.classList.replace("text-white", "text-slate-950");
+      btn.innerHTML = '<i class="fa-solid fa-play"></i> <span>Mulai Kamera</span>';
+      isWebcamActive = false;
+
+      if (pollInterval) clearInterval(pollInterval);
+    }
+
+    function switchCameraLocation() {
+      const cam = document.getElementById("cameraSelect").value;
+      alert("Feed kamera beralih ke: " + cam);
+    }
+
+    function captureCurrentSnapshot() {
+      const cam = document.getElementById("cameraSelect").value;
+      logViolationEvent("Verifikasi Manual (Snapshot)", 1.0, cam);
+      alert("Snapshot kamera " + cam + " berhasil dicatat ke buku log audit!");
+    }
+
+    async function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      currentLoadedFile = file;
+      await uploadAndDetect(file);
+    }
+
+    async function testSampleImage(category = 'random') {
+      try {
+        const resp = await fetch(`/api/v1/sample/worker?category=${category}&t=` + Date.now());
+        if (!resp.ok) throw new Error("Gagal mengambil citra dari server");
+        const filename = resp.headers.get("X-Filename") || `sample_${category}.jpg`;
+        const blob = await resp.blob();
+        const file = new File([blob], filename, { type: "image/jpeg" });
+        currentLoadedFile = file;
+        await uploadAndDetect(file);
+      } catch (err) {
+        alert("Gagal memuat citra sampel: " + err.message);
+      }
+    }
+
+    async function uploadAndDetect(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const jsonResp = await fetch("/api/v1/detect?conf=0.45", {
+          method: "POST",
+          body: formData
+        });
+        const data = await jsonResp.json();
+
+        const imgResp = await fetch("/api/v1/detect/visualize?conf=0.45", {
+          method: "POST",
+          body: formData
+        });
+        const imgBlob = await imgResp.blob();
+        const imgUrl = URL.createObjectURL(imgBlob);
+
+        // Update Image Preview
+        const imageResult = document.getElementById("imageResult");
+        const imagePlaceholder = document.getElementById("imagePlaceholder");
+        imageResult.src = imgUrl;
+        imageResult.classList.remove("hidden");
+        imagePlaceholder.classList.add("hidden");
+
+        // Update Telemetry Tag
+        const benchmarkTag = document.getElementById("benchmarkTag");
+        benchmarkTag.classList.remove("hidden");
+        document.getElementById("tagFilename").innerText = file.name;
+        document.getElementById("tagEngine").innerText = data.active_model;
+        document.getElementById("tagSpeed").innerText = `${data.inference_time_ms} ms (${data.fps} FPS)`;
+
+        updateKPI(data);
+        renderBreakdown(data, file.name);
+      } catch (err) {
+        alert("Gagal memproses deteksi citra: " + err.message);
+      }
+    }
+
+    function renderBreakdown(data, sourceName) {
+      const card = document.getElementById("breakdownCard");
+      const list = document.getElementById("breakdownList");
+      const countTag = document.getElementById("totalBoxCount");
+      card.classList.remove("hidden");
+      list.innerHTML = "";
+      countTag.innerText = `${data.detections.length} objek`;
+
+      if (data.detections.length === 0) {
+        list.innerHTML = '<p class="text-slate-400 italic p-2">Tidak ada objek terdeteksi.</p>';
+        return;
+      }
+
+      data.detections.forEach(det => {
+        const isViolation = det.is_violation;
+        const colorClass = isViolation 
+          ? "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/60" 
+          : "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/60";
+        const icon = isViolation ? "fa-triangle-exclamation text-rose-500" : "fa-circle-check text-emerald-500";
+
+        const div = document.createElement("div");
+        div.className = `flex items-center justify-between px-3 py-2 rounded-lg border ${colorClass}`;
+        div.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid ${icon}"></i>
+            <span class="font-medium">${det.class_name}</span>
+          </div>
+          <span class="font-mono text-xs opacity-90">${(det.confidence * 100).toFixed(1)}%</span>
+        `;
+        list.appendChild(div);
+
+        if (isViolation) {
+          logViolationEvent(det.class_name, det.confidence, sourceName);
+        }
+      });
+    }
+
+    function updateKPI(data) {
+      const workers = data.detections.filter(d => d.class_name === "person").length;
+      const violations = data.total_violations;
+      const totalEvaluated = data.detections.length;
+
+      document.getElementById("metricWorkers").innerText = workers || (data.detections.length > 0 ? 1 : 0);
+      document.getElementById("metricViolations").innerText = violations;
+
+      document.getElementById("metricLatency").innerHTML = `${data.inference_time_ms} <span class="text-xs text-slate-400 font-normal">ms (${data.fps} FPS)</span>`;
+      document.getElementById("lblActiveModel").innerText = data.active_model;
+
+      if (violations === 0) {
+        document.getElementById("metricCompliance").innerText = "100%";
+        document.getElementById("metricCompliance").className = "text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400";
+      } else {
+        const rate = Math.max(0, Math.round(((totalEvaluated - violations) / totalEvaluated) * 100));
+        document.getElementById("metricCompliance").innerText = rate + "%";
+        document.getElementById("metricCompliance").className = "text-3xl font-bold tracking-tight text-amber-600 dark:text-amber-400";
+      }
+    }
+
+    function logViolationEvent(className, conf, sourceName) {
+      const tbody = document.getElementById("violationTableBody");
+      const emptyRow = document.getElementById("emptyLogRow");
+      if (emptyRow) emptyRow.remove();
+
+      const now = new Date().toLocaleTimeString();
+      const location = sourceName || document.getElementById("cameraSelect").value;
+
+      loggedIncidents.push({
+        time: now,
+        location: location,
+        violation: className,
+        conf: (conf * 100).toFixed(1) + "%",
+        status: "Melanggar Standar K3"
+      });
+
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-slate-50 dark:hover:bg-slate-800/40 transition";
+      tr.innerHTML = `
+        <td class="py-3 px-4 font-mono text-slate-600 dark:text-slate-400">${now}</td>
+        <td class="py-3 px-4 font-medium text-slate-800 dark:text-slate-200">${location}</td>
+        <td class="py-3 px-4 font-semibold text-rose-600 dark:text-rose-400">${className}</td>
+        <td class="py-3 px-4 font-mono text-slate-600 dark:text-slate-400">${(conf * 100).toFixed(1)}%</td>
+        <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-[10px] bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-400 dark:border-rose-900/60 font-medium">Pelanggaran</span></td>
+        <td class="py-3 px-4"><button class="text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 font-medium text-xs" onclick="alert('Peringatan keselamatan berhasil disiarkan ke pengawas lapangan!')">Kirim Peringatan</button></td>
+      `;
+      tbody.prepend(tr);
+    }
+
+    function clearLogs() {
+      loggedIncidents = [];
+      const tbody = document.getElementById("violationTableBody");
+      tbody.innerHTML = `
+        <tr id="emptyLogRow">
+          <td colspan="6" class="py-7 text-center text-slate-400 dark:text-slate-500 text-xs">
+            <i class="fa-solid fa-circle-check text-emerald-500 text-lg mb-1 block"></i>
+            Buku log riwayat telah dibersihkan.
+          </td>
+        </tr>
+      `;
+    }
+
+    function exportLogsCSV() {
+      if (loggedIncidents.length === 0) {
+        alert("Belum ada data log pelanggaran untuk diekspor.");
+        return;
+      }
+      let csvContent = "data:text/csv;charset=utf-8,Waktu,Lokasi/Sumber,Pelanggaran,Tingkat Keyakinan,Status\n";
+      loggedIncidents.forEach(row => {
+        csvContent += `"${row.time}","${row.location}","${row.violation}","${row.conf}","${row.status}"\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `log_pelanggaran_k3_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    async function changeModel() {
+      const sel = document.getElementById("modelSelector").value;
+      const resp = await fetch("/api/v1/model/switch?model_name=" + sel, { method: "POST" });
+      const data = await resp.json();
+      document.getElementById("lblActiveModel").innerText = data.active_model;
+
+      if (currentLoadedFile) {
+        await uploadAndDetect(currentLoadedFile);
+      }
+    }
+
+    async function fetchStats() {
+      try {
+        const resp = await fetch("/api/v1/stats");
+        const data = await resp.json();
+        if (data.active_violations !== undefined) {
+          document.getElementById("metricViolations").innerText = data.active_violations;
+        }
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>

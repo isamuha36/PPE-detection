@@ -1,0 +1,18 @@
+# YOLO Dataset Configuration for Mining PPE Compliance Detection
+path: data/processed
+
+train: train/images
+val: val/images
+test: test/images
+
+# Classes definition
+names:
+  0: person
+  1: cap_on
+  2: cap_off
+  3: mask_on
+  4: mask_off
+  5: jacket_on
+  6: jacket_off
+  7: gloves_on
+  8: gloves_off
