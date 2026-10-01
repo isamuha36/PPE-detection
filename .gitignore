@@ -80,6 +80,8 @@ data/processed/*
 !data/processed/.gitkeep
 data/samples/*
 !data/samples/.gitkeep
+data/pdu_curated/*
+!data/pdu_curated/.gitkeep
 *.zip
 *.tar.gz
 *.mp4
