@@ -16,13 +16,15 @@ class PDUVideoExtractor:
         self,
         model_path: Union[str, Path] = "models/trained/best.pt",
         output_dir: Union[str, Path] = "data/pdu_curated",
-        conf_threshold: float = 0.35,
-        iou_threshold: float = 0.45
+        conf_threshold: float = 0.25,
+        iou_threshold: float = 0.45,
+        imgsz: int = 1280
     ):
         self.output_dir = Path(output_dir)
         self.images_dir = self.output_dir / "images"
         self.labels_dir = self.output_dir / "labels"
         self.vis_dir = self.output_dir / "visualized"
+        self.imgsz = imgsz
 
         self.images_dir.mkdir(parents=True, exist_ok=True)
         self.labels_dir.mkdir(parents=True, exist_ok=True)
@@ -103,9 +105,10 @@ class PDUVideoExtractor:
                 extracted_count += 1
                 time_sec = frame_idx / fps
 
-                # Run inference via detector's YOLO model
+                # Run inference via detector's YOLO model with higher resolution
                 results = self.detector.model.predict(
                     source=frame,
+                    imgsz=self.imgsz,
                     conf=self.conf_threshold,
                     iou=self.detector.iou_threshold,
                     verbose=False

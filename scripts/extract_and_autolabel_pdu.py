@@ -43,8 +43,14 @@ def main():
     parser.add_argument(
         "--conf",
         type=float,
-        default=0.35,
-        help="Confidence threshold for auto-labeling (default: 0.35)"
+        default=0.25,
+        help="Confidence threshold for auto-labeling (default: 0.25)"
+    )
+    parser.add_argument(
+        "--imgsz",
+        type=int,
+        default=1280,
+        help="Inference image resolution size (default: 1280 for 2K CCTV)"
     )
     parser.add_argument(
         "--no-vis",
@@ -74,6 +80,7 @@ def main():
     print(f"Model: {args.model_path}")
     print(f"Output: {args.output_dir}")
     print(f"Sampling interval: {args.interval}s")
+    print(f"Inference size: {args.imgsz}px")
     print(f"Confidence threshold: {args.conf}")
     print(f"Visualizations: {'Disabled' if args.no_vis else 'Enabled'}")
     print(f"Filter empty frames: {'No' if args.keep_empty else 'Yes'}")
@@ -84,7 +91,8 @@ def main():
     extractor = PDUVideoExtractor(
         model_path=args.model_path,
         output_dir=args.output_dir,
-        conf_threshold=args.conf
+        conf_threshold=args.conf,
+        imgsz=args.imgsz
     )
 
     all_stats = []
