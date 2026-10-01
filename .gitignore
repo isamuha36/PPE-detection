@@ -80,6 +80,7 @@ data/processed/*
 !data/processed/.gitkeep
 data/samples/*
 !data/samples/.gitkeep
+!data/samples/fp_case*.png
 data/pdu_curated/*
 !data/pdu_curated/.gitkeep
 *.zip
