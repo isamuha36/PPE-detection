@@ -1,0 +1,9 @@
+person
+cap_on
+cap_off
+mask_on
+mask_off
+jacket_on
+jacket_off
+gloves_on
+gloves_off

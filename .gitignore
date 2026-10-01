@@ -83,6 +83,9 @@ data/samples/*
 !data/samples/fp_case*.png
 data/pdu_curated/*
 !data/pdu_curated/.gitkeep
+data/pdu_ground_truth/*
+!data/pdu_ground_truth/.gitkeep
+!data/pdu_ground_truth/classes.txt
 *.zip
 *.tar.gz
 *.mp4
@@ -112,3 +115,4 @@ Thumbs.db
 **/*.md
 !**/README.md
 !**/readme.md
+!data/pdu_ground_truth/GUIDE_KURASI.md
