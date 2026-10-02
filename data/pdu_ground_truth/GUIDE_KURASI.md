@@ -1,4 +1,4 @@
-# Panduan Kurasi Manual Ground Truth Rig PDU (50 Frame Kunci)
+# Panduan Kurasi Manual Ground Truth Rig PDU (100 Frame Kunci)
 
 Dokumen ini adalah protokol anotasi baku (*Annotation Codebook*) untuk menghasilkan dataset standar emas (*Gold Standard Ground Truth*) dari rekaman CCTV rig pengeboran PT Parama Data Unit.
 
@@ -6,10 +6,10 @@ Dokumen ini adalah protokol anotasi baku (*Annotation Codebook*) untuk menghasil
 
 ## 1. Struktur Folder Kerja
 
-Dataset 50 frame kunci tersimpan di:
+Dataset 100 frame kunci tersimpan di:
 ```text
 E:\Tugas Akhir\PPE-detection\data\pdu_ground_truth\
-├── images/            <-- 50 citra resolusi asli 2K QHD (2560x1440) yang tersebar merata
+├── images/            <-- 100 citra resolusi asli 2K QHD (2560x1440) yang tersebar merata
 ├── labels/            <-- Anotasi draf awal dari YOLO11s (format .txt koordinat YOLO)
 ├── visualized/        <-- Preview visual kotak deteksi awal untuk memudahkan pengecekan
 ├── classes.txt        <-- Daftar 9 kelas baku standar
@@ -73,11 +73,11 @@ Jika data tidak boleh diunggah ke internet karena kebijakan kerahasiaan data ind
 
 ---
 
-## 4. Alur Setelah 50 Frame Bersih Tersedia
+## 4. Alur Setelah 100 Frame Bersih Tersedia
 
-Setelah 50 frame ini selesai dirapikan:
+Setelah 100 frame ini selesai dirapikan:
 1. Kita akan membagi dataset menjadi:
-   * **35 frame** untuk *Fine-Tuning Latih (Train Set)*.
-   * **15 frame** untuk *Evaluasi Objektif (Validation & Benchmark Set)*.
+   * **75 frame** untuk *Fine-Tuning Latih (Train Set)*.
+   * **25 frame** untuk *Evaluasi Objektif (Validation & Benchmark Set)*.
 2. Kita jalankan proses transfer learning fine-tuning pada model YOLO11s.
 3. Model baru akan memiliki akurasi di atas 85–90% pada CCTV rig PDU tanpa lagi mengalami salah deteksi pada mesin atau manometer.
